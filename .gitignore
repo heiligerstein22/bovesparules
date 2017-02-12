@@ -1,3 +1,7 @@
+# personal
+.*.swp
+stocks/
+
 # History files
 .Rhistory
 .Rapp.history
