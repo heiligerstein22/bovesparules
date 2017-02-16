@@ -1,6 +1,7 @@
 # personal
 .*.swp
 stocks/
+irpf/*.txt
 
 # History files
 .Rhistory
