@@ -25,25 +25,83 @@ for (stock_name in c(ibov)){
     hma20 <- TTR::HMA(stock[,"Close"], 20)
     rsi <- TTR::RSI(stock[,"Close"], n=14, maType="WMA", wts=stock[,"Volume"])
 	ema_vol <- TTR::EMA(stock[,"Volume"], 20)
+	bbands.close <- TTR::BBands( stock[,"Close"], 20, "SMA", 2 )
 
     # HMA rule
     # print(paste("=== ", stock_name, " ==="))
+
+	# check if printable
+	output <- 0
+
+	# check HullMA CrossOver
+	HullMA = NULL
     if (    
             (hma10[length(hma10)] > hma20[length(hma20)]) &&
             (hma10[length(hma10)-1] < hma20[length(hma20)-1]) 
        ) {
+		HullMA <- "HullMA Cross"
+		output <- 1
+	}
 
-       	print(paste("HMA CrossOver: ", stock_name))
-       	print(paste("    RSI: ", sprintf("%.2f", rsi[length(rsi)])))
-		
-		# check volume
-        last_volume <- stock[,"Volume"][length(ema_vol)]
-		last_ema_vol <- ema_vol[length(ema_vol)]
+	# check volume
+	last_volume <- stock[,"Volume"][length(ema_vol)]
+	last_ema_vol <- ema_vol[length(ema_vol)]
+	if (last_volume > last_ema_vol) {
+		output.rel_vol <- sprintf("%.2f", (last_volume - last_ema_vol) / last_ema_vol)
+	}
 
-		if (last_volume > last_ema_vol) {
-			rel_vol <- sprintf("%.2f", (last_volume - last_ema_vol) / last_ema_vol)
-       		print(paste("    Rel. Volume: ", rel_vol))
+	# check BBands
+	# last_bbands = bbands.close[length(bbands.close[,1])][,"pctB"]
+	last_bbands = bbands.close[,"pctB"]
+	if (last_bbands[length(bbands.close[,1])] > 1 || last_bbands[length(bbands.close[,1])] < 0) {
+	# if (last_bbands[length(bbands.close[,1])] < 0) {
+		output <- 1
+	}
+
+	# output
+	if (output) {
+		print(paste("Stock Name:  ", stock_name))
+		print(paste("Rel. Volume: ", output.rel_vol))
+		print(paste("BBands:      ", 
+					sprintf("%.2f [last: %.2f, %.2f, %.2f]", 
+					last_bbands[length(bbands.close[,1])], 
+					last_bbands[length(bbands.close[,1])-1], 
+					last_bbands[length(bbands.close[,1])-2], 
+					last_bbands[length(bbands.close[,1])-3]
+				)
+			)
+		)
+       	print(paste("RSI:         ", 
+				sprintf("%.2f [last: %.2f, %.2f, %.2f]", 
+					rsi[length(rsi)], 
+					rsi[length(rsi)-1], 
+					rsi[length(rsi)-2], 
+					rsi[length(rsi)-3]
+				)
+			)
+		)
+		if (!is.null(HullMA)) {
+			print(paste(HullMA, ": OK"))
 		}
+		print("")
+	}
 
-    }
+#    if (    
+#            (hma10[length(hma10)] > hma20[length(hma20)]) &&
+#            (hma10[length(hma10)-1] < hma20[length(hma20)-1]) 
+#       ) {
+#
+#       	print(paste("HMA CrossOver: ", stock_name))
+#       	print(paste("    RSI: ", sprintf("%.2f", rsi[length(rsi)])))
+#		
+#		# check volume
+#       last_volume <- stock[,"Volume"][length(ema_vol)]
+#		last_ema_vol <- ema_vol[length(ema_vol)]
+#
+#		if (last_volume > last_ema_vol) {
+#			rel_vol <- sprintf("%.2f", (last_volume - last_ema_vol) / last_ema_vol)
+#       		print(paste("    Rel. Volume: ", rel_vol))
+#		}
+#    }
+
 }
