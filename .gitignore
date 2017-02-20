@@ -1,5 +1,6 @@
 # personal
 .*.swp
+.*.swo
 stocks/
 irpf/*.txt
 
