@@ -7,20 +7,48 @@ ibov <- readLines("ibovespa.txt")
 for (stock_name in c(ibov)){
 
     # reading file
-    stock_filename = paste("stocks/", stock_name, sep="")
-    if (file.exists(stock_filename)) {
+    stock_filename_daily = paste("stocks/", stock_name, ".D", sep="")
+    stock_filename_weekly = paste("stocks/", stock_name, ".W", sep="")
+
+    if (file.exists(stock_filename_daily) && file.exists(stock_filename_weekly)) {
 
         # reading stock locally
-        stock <- dget(file=stock_filename)
+        stock <- dget(file=stock_filename_daily)
+        stock_w <- dget(file=stock_filename_weekly)
 
     } else {
 
         # download stocks from WAN
-        stock <- TTR::getYahooData(paste(stock_name,".SA", sep=""), 20150101)
-        dput(stock, file=stock_filename)
+
+		# daily
+        # stock <- TTR::getYahooData(paste(stock_name, ".SA&g=d", sep=""), 20150101)
+		stock <- read.csv(
+			paste(
+				"http://chart.finance.yahoo.com/table.csv?s=",
+				stock_name,
+				".SA&a=1&b=1&c=2015&g=d&ignore=.csv", 
+				sep=""
+			)
+		)
+		stock <- stock[nrow(stock):1,]
+
+		stock_w <- read.csv(
+			paste(
+				"http://chart.finance.yahoo.com/table.csv?s=",
+				stock_name,
+				".SA&a=1&b=1&c=2015&g=w&ignore=.csv", 
+				sep=""
+			)
+		)
+		stock_w <- stock[nrow(stock_w):1,]
+
+		# writting to disk
+        dput(stock, file=stock_filename_daily)
+        dput(stock_w, file=stock_filename_weekly)
 
     }
 
+	# indicators
     hma10 <- TTR::HMA(stock[,"Close"], 10)
     hma20 <- TTR::HMA(stock[,"Close"], 20)
     rsi <- TTR::RSI(stock[,"Close"], n=14, maType="WMA", wts=stock[,"Volume"])
@@ -32,6 +60,7 @@ for (stock_name in c(ibov)){
 
 	# check if printable
 	output <- 0
+	reason <- NULL
 
 	# check HullMA CrossOver
 	HullMA = NULL
@@ -39,29 +68,46 @@ for (stock_name in c(ibov)){
             (hma10[length(hma10)] > hma20[length(hma20)]) &&
             (hma10[length(hma10)-1] < hma20[length(hma20)-1]) 
        ) {
-		HullMA <- "HullMA Cross"
-		output <- 1
+		HullMA <- "HullMA:       CrossOver"
+		output <- output + 1
+		reason <- paste(reason, "HullCross")
+	}
+
+	# check HullMA closer
+	# print(((hma20[length(hma20)] - hma10[length(hma10)]) / hma10[length(hma10)]))
+	HullMACloser = NULL
+	HullMACloserVal = ((hma20[length(hma20)] - hma10[length(hma10)]) / hma20[length(hma20)])*100
+	# print(HullMACloser)
+    if (HullMACloserVal >= 0 && HullMACloserVal < 0.3) {
+		HullMACloser <- "HullMA:       Closer"
+		output <- output + 1
+		reason <- paste(reason, "HullNear")
 	}
 
 	# check volume
 	last_volume <- stock[,"Volume"][length(ema_vol)]
 	last_ema_vol <- ema_vol[length(ema_vol)]
-	if (last_volume > last_ema_vol) {
-		output.rel_vol <- sprintf("%.2f", (last_volume - last_ema_vol) / last_ema_vol)
+	rel_vol_val <- (last_volume - last_ema_vol) / last_ema_vol
+	rel_vol <- sprintf("%.2f", rel_vol_val)
+	# if (last_volume > last_ema_vol) {
+	if (rel_vol_val > 1) {
+		output <- output + 1
+		reason <- paste(reason, "Volume")
 	}
 
 	# check BBands
 	# last_bbands = bbands.close[length(bbands.close[,1])][,"pctB"]
 	last_bbands = bbands.close[,"pctB"]
-	if (last_bbands[length(bbands.close[,1])] > 1 || last_bbands[length(bbands.close[,1])] < 0) {
-	# if (last_bbands[length(bbands.close[,1])] < 0) {
-		output <- 1
+	# if (last_bbands[length(bbands.close[,1])] > 1 || last_bbands[length(bbands.close[,1])] < 0) {
+	if (last_bbands[length(bbands.close[,1])] < 0) {
+		output <- output + 1
+		reason <- paste(reason, "BBands")
 	}
 
 	# output
 	if (output) {
 		print(paste("Stock Name:  ", stock_name))
-		print(paste("Rel. Volume: ", output.rel_vol))
+		print(paste("Rel. Volume: ", rel_vol))
 		print(paste("BBands:      ", 
 					sprintf("%.2f [last: %.2f, %.2f, %.2f]", 
 					last_bbands[length(bbands.close[,1])], 
@@ -81,8 +127,12 @@ for (stock_name in c(ibov)){
 			)
 		)
 		if (!is.null(HullMA)) {
-			print(paste(HullMA, ": OK"))
+			print(paste(HullMA))
 		}
+		if (!is.null(HullMACloser)) {
+			print(paste(HullMACloser, " (", sprintf("%.2f%%", HullMACloserVal), ")", sep=""))
+		}
+		print(paste("Reason:       ", sprintf("[%s]", output), reason, sep=""))
 		print("")
 	}
 
