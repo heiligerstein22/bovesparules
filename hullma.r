@@ -9,16 +9,26 @@ for (stock_name in c(ibov)){
     # reading file
     stock_filename_daily = paste("stocks/", stock_name, ".D", sep="")
     stock_filename_weekly = paste("stocks/", stock_name, ".W", sep="")
+    stock_filename_mountly = paste("stocks/", stock_name, ".M", sep="")
 
-    if (file.exists(stock_filename_daily) && file.exists(stock_filename_weekly)) {
+    if (file.exists(stock_filename_daily) 
+		&& file.exists(stock_filename_weekly)
+		&& file.exists(stock_filename_mountly)) {
 
         # reading stock locally
         stock <- dget(file=stock_filename_daily)
         stock_w <- dget(file=stock_filename_weekly)
+        stock_m <- dget(file=stock_filename_mountly)
 
     } else {
 
         # download stocks from WAN
+
+        # google
+        # stock <-
+        # read.csv(paste("http://www.google.com/finance/historical?q=",stock_name,"&output=csv",
+        # sep=""))
+        # stock <- stock[ nrow(stock):1, ]
 
 		# daily
         # stock <- TTR::getYahooData(paste(stock_name, ".SA&g=d", sep=""), 20150101)
@@ -40,11 +50,22 @@ for (stock_name in c(ibov)){
 				sep=""
 			)
 		)
-		stock_w <- stock[nrow(stock_w):1,]
+		stock_w <- stock_w[nrow(stock_w):1,]
+
+		stock_m <- read.csv(
+			paste(
+				"http://chart.finance.yahoo.com/table.csv?s=",
+				stock_name,
+				".SA&a=1&b=1&c=2015&g=m&ignore=.csv", 
+				sep=""
+			)
+		)
+		stock_m <- stock_m[nrow(stock_m):1,]
 
 		# writting to disk
         dput(stock, file=stock_filename_daily)
         dput(stock_w, file=stock_filename_weekly)
+        dput(stock_m, file=stock_filename_mountly)
 
     }
 
@@ -71,6 +92,18 @@ for (stock_name in c(ibov)){
 		HullMA <- "HullMA:       CrossOver"
 		output <- output + 1
 		reason <- paste(reason, "HullCross")
+	}
+
+	# check confidence and prediction
+	dt <- 0.001 						# decision threshold
+	stock_m_c <- stock_m[,"Close"]
+	confidence <- (stock_m_c[length(stock_m_c)] - stock_m_c[length(stock_m_c)-1]) / stock_m_c[length(stock_m_c)-1]
+	if (confidence > dt) {
+		prediction <- TRUE
+		output <- output + 1
+		reason <- paste(reason, "Prediction")
+	} else if (confidence < -dt) {
+		prediction <- FALSE
 	}
 
 	# check HullMA closer
@@ -131,6 +164,9 @@ for (stock_name in c(ibov)){
 		}
 		if (!is.null(HullMACloser)) {
 			print(paste(HullMACloser, " (", sprintf("%.2f%%", HullMACloserVal), ")", sep=""))
+		}
+		if (prediction) {
+			print(paste("Confidence:  ", sprintf("%.4f", confidence)))
 		}
 		print(paste("Reason:       ", sprintf("[%s]", output), reason, sep=""))
 		print("")
