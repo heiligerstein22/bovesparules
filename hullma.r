@@ -149,6 +149,7 @@ for (stock_name in c(ibov)){
 	# output
 	if (output > 1) {
 		print(paste("Stock Name:  ", stock_name))
+		print(paste("Price:       ", stock[,"Close"][length(ema_vol)]))
 		print(paste("Volume:      ", sprintf("%.1f K", last_volume/1000)))
 		print(paste("Rel. Volume: ", rel_vol))
 		print(paste("BBands:      ", 
