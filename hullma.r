@@ -1,10 +1,13 @@
-ibov <- readLines("ibovespa.txt")
+# ibov <- readLines("ibovespa.txt")
+ibov <- readLines("todas.txt")
 
 # stock <- TTR::getYahooData("PETR3.SA", 20150101)
 # tail(hma10, n=1) > tail(hma20, n=1) && tail(hma10, n=2) < tail(hma20, n=2)
 # (hma10[length(hma10)] > hma20[length(hma20)]) && (hma10[length(hma10)-1] < hma20[length(hma20)-1])
 
 for (stock_name in c(ibov)){
+
+	# print(paste("STOCK:",stock_name))
 
     # reading file
     stock_filename_daily = paste("stocks/", stock_name, ".D", sep="")
@@ -32,35 +35,41 @@ for (stock_name in c(ibov)){
 
 		# daily
         # stock <- TTR::getYahooData(paste(stock_name, ".SA&g=d", sep=""), 20150101)
-		stock <- read.csv(
-			paste(
-				"http://chart.finance.yahoo.com/table.csv?s=",
-				stock_name,
-				".SA&a=1&b=1&c=2015&g=d&ignore=.csv", 
-				sep=""
-			)
-		)
-		stock <- stock[nrow(stock):1,]
+  		possibleError <- tryCatch({
 
-		stock_w <- read.csv(
-			paste(
-				"http://chart.finance.yahoo.com/table.csv?s=",
-				stock_name,
-				".SA&a=1&b=1&c=2015&g=w&ignore=.csv", 
-				sep=""
+			stock <- read.csv(
+				paste(
+					"http://chart.finance.yahoo.com/table.csv?s=",
+					stock_name,
+					".SA&a=1&b=1&c=2015&g=d&ignore=.csv", 
+					sep=""
+				)
 			)
-		)
-		stock_w <- stock_w[nrow(stock_w):1,]
+			stock <- stock[nrow(stock):1,]
 
-		stock_m <- read.csv(
-			paste(
-				"http://chart.finance.yahoo.com/table.csv?s=",
-				stock_name,
-				".SA&a=1&b=1&c=2015&g=m&ignore=.csv", 
-				sep=""
+			stock_w <- read.csv(
+				paste(
+					"http://chart.finance.yahoo.com/table.csv?s=",
+					stock_name,
+					".SA&a=1&b=1&c=2015&g=w&ignore=.csv", 
+					sep=""
+				)
 			)
+			stock_w <- stock_w[nrow(stock_w):1,]
+
+			stock_m <- read.csv(
+				paste(
+					"http://chart.finance.yahoo.com/table.csv?s=",
+					stock_name,
+					".SA&a=1&b=1&c=2015&g=m&ignore=.csv", 
+					sep=""
+				)
+			)
+			stock_m <- stock_m[nrow(stock_m):1,]
+  		}, error = function(e) e
 		)
-		stock_m <- stock_m[nrow(stock_m):1,]
+
+		if(inherits(possibleError, "error")) next
 
 		# writting to disk
         dput(stock, file=stock_filename_daily)
@@ -138,8 +147,9 @@ for (stock_name in c(ibov)){
 	}
 
 	# output
-	if (output) {
+	if (output > 1) {
 		print(paste("Stock Name:  ", stock_name))
+		print(paste("Volume:      ", sprintf("%.1f K", last_volume/1000)))
 		print(paste("Rel. Volume: ", rel_vol))
 		print(paste("BBands:      ", 
 					sprintf("%.2f [last: %.2f, %.2f, %.2f]", 
