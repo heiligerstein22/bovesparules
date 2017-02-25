@@ -1,18 +1,42 @@
-# ibov <- readLines("ibovespa.txt")
-ibov <- readLines("todas.txt")
+##########################################################
+#
+#	Usage:  
+#		R --quiet --vanilla --args 2017-1-31 < hullma.r
+#		R --quiet --vanilla < hullma.r
+#
+#	@author	Leonardo Santos <heiligerstein@gmail.com>
+#
+##########################################################
 
-# stock <- TTR::getYahooData("PETR3.SA", 20150101)
-# tail(hma10, n=1) > tail(hma20, n=1) && tail(hma10, n=2) < tail(hma20, n=2)
-# (hma10[length(hma10)] > hma20[length(hma20)]) && (hma10[length(hma10)-1] < hma20[length(hma20)-1])
+# supress commands in output
+options(echo=FALSE)
+
+# args
+args <- commandArgs(trailingOnly = TRUE)
+
+if (length(args) > 0) {
+	end_date <- as.Date(args[1])
+} else {
+	end_date <- Sys.Date()
+}
+
+lday <- as.numeric(format(end_date, format="%d"))
+lmounth <- as.numeric(format(end_date, format="%m")) - 1
+lyear <- as.numeric(format(end_date, format="%Y"))
+
+# stock list
+ibov <- readLines("todas.txt")
+# ibov <- readLines("ibovespa.txt")
+# ibov <- readLines("ibovespa-test.txt")
 
 for (stock_name in c(ibov)){
 
 	# print(paste("STOCK:",stock_name))
 
     # reading file
-    stock_filename_daily = paste("stocks/", stock_name, ".D", sep="")
-    stock_filename_weekly = paste("stocks/", stock_name, ".W", sep="")
-    stock_filename_mountly = paste("stocks/", stock_name, ".M", sep="")
+    stock_filename_daily = paste("stocks/", stock_name, ".D-", end_date, sep="")
+    stock_filename_weekly = paste("stocks/", stock_name, ".W-", end_date, sep="")
+    stock_filename_mountly = paste("stocks/", stock_name, ".M-", end_date, sep="")
 
     if (file.exists(stock_filename_daily) 
 		&& file.exists(stock_filename_weekly)
@@ -41,7 +65,7 @@ for (stock_name in c(ibov)){
 				paste(
 					"http://chart.finance.yahoo.com/table.csv?s=",
 					stock_name,
-					".SA&a=1&b=1&c=2015&g=d&ignore=.csv", 
+					".SA&a=1&b=1&c=2015&d=",lmounth,"&e=",lday,"&f=",lyear,"&g=d&ignore=.csv", 
 					sep=""
 				)
 			)
@@ -51,7 +75,7 @@ for (stock_name in c(ibov)){
 				paste(
 					"http://chart.finance.yahoo.com/table.csv?s=",
 					stock_name,
-					".SA&a=1&b=1&c=2015&g=w&ignore=.csv", 
+					".SA&a=1&b=1&c=2015&d=",lmounth,"&e=",lday,"&f=",lyear,"&g=w&ignore=.csv", 
 					sep=""
 				)
 			)
@@ -61,7 +85,7 @@ for (stock_name in c(ibov)){
 				paste(
 					"http://chart.finance.yahoo.com/table.csv?s=",
 					stock_name,
-					".SA&a=1&b=1&c=2015&g=m&ignore=.csv", 
+					".SA&a=1&b=1&c=2015&d=",lmounth,"&e=",lday,"&f=",lyear,"&g=m&ignore=.csv", 
 					sep=""
 				)
 			)
@@ -94,9 +118,20 @@ for (stock_name in c(ibov)){
 
 	# check HullMA CrossOver
 	HullMA = NULL
+
+	#print(paste(hma10[length(hma10)], hma20[length(hma20)], hma10[length(hma10)-1], hma20[length(hma20)-1]))
+	#print(paste(hma10[length(hma10)], hma10[length(hma10)-1], hma10[length(hma10)-2], hma10[length(hma10)-3]))
+	#print(paste(hma10[length(hma10)]/hma10[length(hma10)-1], hma10[length(hma10)-1]/hma10[length(hma10)-2], hma10[length(hma10)-2]/hma10[length(hma10)-3]))
+
     if (    
             (hma10[length(hma10)] > hma20[length(hma20)]) &&
-            (hma10[length(hma10)-1] < hma20[length(hma20)-1]) 
+            (hma10[length(hma10)-1] < hma20[length(hma20)-1]) &&
+			# testing HMA up tendency 
+			(
+				hma10[length(hma10)]/hma10[length(hma10)-1] > 1 &&
+				hma10[length(hma10)-1]/hma10[length(hma10)-2] > 1 &&
+				hma10[length(hma10)-2]/hma10[length(hma10)-3] > 1
+			)
        ) {
 		HullMA <- "HullMA:       CrossOver"
 		output <- output + 1
@@ -106,13 +141,22 @@ for (stock_name in c(ibov)){
 	# check confidence and prediction
 	dt <- 0.001 						# decision threshold
 	stock_m_c <- stock_m[,"Close"]
-	confidence <- (stock_m_c[length(stock_m_c)] - stock_m_c[length(stock_m_c)-1]) / stock_m_c[length(stock_m_c)-1]
-	if (confidence > dt) {
-		prediction <- TRUE
+	confidence_m <- (stock_m_c[length(stock_m_c)] - stock_m_c[length(stock_m_c)-1]) / stock_m_c[length(stock_m_c)-1]
+	if (confidence_m > dt) {
+		prediction_m <- TRUE
 		output <- output + 1
-		reason <- paste(reason, "Prediction")
-	} else if (confidence < -dt) {
-		prediction <- FALSE
+		reason <- paste(reason, "Up(M)")
+	} else if (confidence_m < -dt) {
+		prediction_m <- FALSE
+	}
+	stock_w_c <- stock_w[,"Close"]
+	confidence_w <- (stock_w_c[length(stock_w_c)] - stock_w_c[length(stock_w_c)-1]) / stock_w_c[length(stock_w_c)-1]
+	if (confidence_w > dt) {
+		prediction_w <- TRUE
+		output <- output + 1
+		reason <- paste(reason, "Up(W)")
+	} else if (confidence_w < -dt) {
+		prediction_w <- FALSE
 	}
 
 	# check HullMA closer
@@ -141,15 +185,24 @@ for (stock_name in c(ibov)){
 	# last_bbands = bbands.close[length(bbands.close[,1])][,"pctB"]
 	last_bbands = bbands.close[,"pctB"]
 	# if (last_bbands[length(bbands.close[,1])] > 1 || last_bbands[length(bbands.close[,1])] < 0) {
-	if (last_bbands[length(bbands.close[,1])] < 0) {
+	if (
+		last_bbands[length(bbands.close[,1])] < 0 ||
+		last_bbands[length(bbands.close[,1])-1] < 0 ||
+		last_bbands[length(bbands.close[,1])-2] < 0 ||
+		last_bbands[length(bbands.close[,1])-3] < 0
+	) {
 		output <- output + 1
 		reason <- paste(reason, "BBands")
 	}
 
 	# output
-	if (output > 1) {
+	last_price <- stock[,"Close"][length(ema_vol)]
+	if (output > 1 && 
+		(last_price > 2 && last_price < 5) &&
+		(last_volume > 100000)
+		) {
 		print(paste("Stock Name:  ", stock_name))
-		print(paste("Price:       ", stock[,"Close"][length(ema_vol)]))
+		print(paste("Price:       ", last_price))
 		print(paste("Volume:      ", sprintf("%.1f K", last_volume/1000)))
 		print(paste("Rel. Volume: ", rel_vol))
 		print(paste("BBands:      ", 
@@ -176,29 +229,19 @@ for (stock_name in c(ibov)){
 		if (!is.null(HullMACloser)) {
 			print(paste(HullMACloser, " (", sprintf("%.2f%%", HullMACloserVal), ")", sep=""))
 		}
-		if (prediction) {
-			print(paste("Confidence:  ", sprintf("%.4f", confidence)))
+		if (prediction_m) {
+			print(paste("Confidence M:", sprintf("%.4f", confidence_m)))
+		}
+		if (prediction_w) {
+			print(paste("Confidence W:", sprintf("%.4f", confidence_w)))
 		}
 		print(paste("Reason:       ", sprintf("[%s]", output), reason, sep=""))
-		print("")
+		print("###################################################")
 	}
 
-#    if (    
-#            (hma10[length(hma10)] > hma20[length(hma20)]) &&
-#            (hma10[length(hma10)-1] < hma20[length(hma20)-1]) 
-#       ) {
-#
-#       	print(paste("HMA CrossOver: ", stock_name))
-#       	print(paste("    RSI: ", sprintf("%.2f", rsi[length(rsi)])))
-#		
-#		# check volume
-#       last_volume <- stock[,"Volume"][length(ema_vol)]
-#		last_ema_vol <- ema_vol[length(ema_vol)]
-#
-#		if (last_volume > last_ema_vol) {
-#			rel_vol <- sprintf("%.2f", (last_volume - last_ema_vol) / last_ema_vol)
-#       		print(paste("    Rel. Volume: ", rel_vol))
-#		}
-#    }
-
 }
+# warnings()
+
+print("###################################################")
+print(paste("# Last Download: ", stock[,"Date"][length(stock[,"Date"])-1]))
+print("###################################################")
