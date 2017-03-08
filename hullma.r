@@ -11,6 +11,11 @@
 # supress commands in output
 options(echo=FALSE)
 
+# stock list
+ibov <- readLines("todas.txt")
+# ibov <- readLines("ibovespa.txt")
+# ibov <- readLines("ibovespa-test.txt")
+
 InsertMySQL = function(stock_name, check_date, reasons, last_price, gain, is_rsi_d, is_rel_vol_d,
 	is_bbands_d, is_hullnear_d, is_hullcross_d, is_up_w, is_up_m, num_reasons,
 	rsi_prev3, rsi_prev2, rsi_prev1, rsi, bbands_prev3, bbands_prev2, bbands_prev1,
@@ -55,6 +60,35 @@ InsertMySQL = function(stock_name, check_date, reasons, last_price, gain, is_rsi
 
 }
 
+# checks if this day was analyzed
+checkStockScreenerMySQL = function(stock_name, check_date) {
+
+	if(!exists("con")) {
+		con <- RMySQL::dbConnect(RMySQL::MySQL(), 
+			user="acoes",
+			password="00acoes11",
+			dbname="acoes", 
+			host="localhost"
+		)
+	}
+	on.exit(RMySQL::dbDisconnect(con))
+
+	rs <- RMySQL::dbSendQuery(con, sprintf("SELECT COUNT(*) as count
+				FROM stockscreaner 
+				WHERE stock_name = '%s'
+				AND check_date = '%s';", 
+			stock_name, check_date))
+	
+	data <- RMySQL::fetch(rs, n=1)
+
+	if (data[,"count"] == 1) {
+		return(TRUE)
+	} else {
+		return(FALSE)
+	}
+	
+}
+
 # funtion to cut matrix lines by date
 getStockByDate <- function(stock, last_date) {
 
@@ -80,19 +114,49 @@ lday <- format(end_date, format="%d")
 lmounth <- format(end_date, format="%m")
 lyear <- format(end_date, format="%Y")
 
-# stock list
-ibov <- readLines("todas.txt")
-# ibov <- readLines("ibovespa.txt")
-# ibov <- readLines("ibovespa-test.txt")
+# returns the last workdate
+# this evicts to download unwanted files 
+last_workdate_filename <- "last_workdate.dat"
+getLastWorkDate = function() {
+
+	if (file.exists(last_workdate_filename)) {
+		last_workdate <- dget(file=last_workdate_filename)
+		# print("ENTREI 1")
+		return(last_workdate)
+	}
+
+	# uses PETR4 as test
+#	stock <- read.csv(paste("http://www.google.com/finance/historical?q=PETR4&output=csv", sep=""))
+	stock <- read.csv(
+		paste(
+			"http://chart.finance.yahoo.com/table.csv?s=PETR4.SA&a=1&b=1&c=2017&g=d&ignore=.csv", 
+			sep=""
+		)
+	)
+
+	# loop to find last valid workdate with volume
+	for (i in (1:nrow(stock))) {
+		if (stock[i,"Volume"] > 0) {
+			last_workdate <- stock[i,"Date"]
+			dput(last_workdate, file=last_workdate_filename)
+			return(last_workdate)
+		}
+	}
+
+}
+
+last_workdate <- getLastWorkDate()
+print(last_workdate)
+old_stock <- NULL
 
 for (stock_name in c(ibov)){
 
-	#print(paste("STOCK:",stock_name))
+	print(paste("STOCK:",stock_name))
 
     # reading file
-    stock_filename_daily = paste("stocks/", stock_name, ".D-", Sys.Date(), sep="")
-    stock_filename_weekly = paste("stocks/", stock_name, ".W-", Sys.Date(), sep="")
-    stock_filename_mountly = paste("stocks/", stock_name, ".M-", Sys.Date(), sep="")
+    stock_filename_daily = paste("stocks/", stock_name, ".D-", last_workdate, sep="")
+    stock_filename_weekly = paste("stocks/", stock_name, ".W-", last_workdate, sep="")
+    stock_filename_mountly = paste("stocks/", stock_name, ".M-", last_workdate, sep="")
 
     if (file.exists(stock_filename_daily) 
 		&& file.exists(stock_filename_weekly)
@@ -121,18 +185,19 @@ for (stock_name in c(ibov)){
 				paste(
 					"http://chart.finance.yahoo.com/table.csv?s=",
 					stock_name,
-					".SA&a=1&b=1&c=2015&g=d&ignore=.csv", 
+					".SA&a=1&b=1&c=2010&g=d&ignore=.csv", 
 					# ".SA&a=1&b=1&c=2015&d=",lmounth,"&e=",lday,"&f=",lyear,"&g=d&ignore=.csv", 
 					sep=""
 				)
 			)
+#			stock <- read.csv(paste("http://www.google.com/finance/historical?q=",stock_name,"&output=csv", sep=""))
 			stock <- stock[nrow(stock):1,]
 
 			stock_w <- read.csv(
 				paste(
 					"http://chart.finance.yahoo.com/table.csv?s=",
 					stock_name,
-					".SA&a=1&b=1&c=2015&g=w&ignore=.csv", 
+					".SA&a=1&b=1&c=2010&g=w&ignore=.csv", 
 					# ".SA&a=1&b=1&c=2015&d=",lmounth,"&e=",lday,"&f=",lyear,"&g=w&ignore=.csv", 
 					sep=""
 				)
@@ -143,7 +208,7 @@ for (stock_name in c(ibov)){
 				paste(
 					"http://chart.finance.yahoo.com/table.csv?s=",
 					stock_name,
-					".SA&a=1&b=1&c=2015&g=m&ignore=.csv", 
+					".SA&a=1&b=1&c=2010&g=m&ignore=.csv", 
 					# ".SA&a=1&b=1&c=2015&d=",lmounth,"&e=",lday,"&f=",lyear,"&g=m&ignore=.csv", 
 					sep=""
 				)
@@ -161,6 +226,12 @@ for (stock_name in c(ibov)){
 
     }
 
+	# jump to next loop
+	if (identical(old_stock, stock)) {
+		print("next")
+		next
+	}
+	old_stock <- stock
 
 	# print(length(args))
 
@@ -192,7 +263,7 @@ for (stock_name in c(ibov)){
 		# indicators
 		hma10 <- TTR::HMA(stock[,"Close"], 10)
 		hma20 <- TTR::HMA(stock[,"Close"], 20)
-		rsi <- TTR::RSI(stock[,"Close"], n=14, maType="WMA", wts=stock[,"Volume"])
+		rsi <- TTR::RSI(stock[,"Close"], n=14, maType="SMA", wts=stock[,"Volume"])
 		ema_vol <- TTR::EMA(stock[,"Volume"], 20)
 		bbands.close <- TTR::BBands( stock[,"Close"], 20, "SMA", 2 )
 
@@ -215,8 +286,12 @@ for (stock_name in c(ibov)){
 
 		# check confidence and prediction
 		dt <- 0.001 						# decision threshold
+		# day
+		stock_c <- stock[,"Close"]
+		# mounth
 		stock_m_c <- stock_m[,"Close"]
-		confidence_m <- (stock_m_c[length(stock_m_c)] - stock_m_c[length(stock_m_c)-1]) / stock_m_c[length(stock_m_c)-1]
+		confidence_m <- (stock_c[length(stock_c)] - stock_m_c[length(stock_m_c)-1]) / stock_m_c[length(stock_m_c)-1]
+		# confidence_m <- (stock_m_c[length(stock_m_c)] - stock_m_c[length(stock_m_c)-1]) / stock_m_c[length(stock_m_c)-1]
 		if (confidence_m > dt) {
 			prediction_m <- TRUE
 			output <- output + 1
@@ -225,14 +300,15 @@ for (stock_name in c(ibov)){
 			prediction_m <- FALSE
 		}
 		stock_w_c <- stock_w[,"Close"]
-		confidence_w <- (stock_w_c[length(stock_w_c)] - stock_w_c[length(stock_w_c)-1]) / stock_w_c[length(stock_w_c)-1]
-		if (confidence_w > dt) {
-			prediction_w <- TRUE
-			output <- output + 1
-			reason <- paste(reason, "Up(W)")
-		} else if (confidence_w < -dt) {
-			prediction_w <- FALSE
-		}
+		# confidence_w <- (stock_w_c[length(stock_w_c)] - stock_w_c[length(stock_w_c)-1]) / stock_w_c[length(stock_w_c)-1]
+#		confidence_w <- (stock_c[length(stock_c)] - stock_w_c[length(stock_w_c)-1]) / stock_w_c[length(stock_w_c)-1]
+#		if (confidence_w > dt) {
+#			prediction_w <- TRUE
+#			output <- output + 1
+#			# reason <- paste(reason, "Up(W)")
+#		} else if (confidence_w < -dt) {
+#			prediction_w <- FALSE
+#		}
 
 		HullMACloserVal = ((hma20[length(hma20)] - hma10[length(hma10)]) / hma20[length(hma20)])*100
 		# print(HullMACloser)
@@ -243,6 +319,7 @@ for (stock_name in c(ibov)){
 		}
 
 		# check volume
+		is_rel_vol_d <- 0
 		last_volume <- stock[,"Volume"][length(ema_vol)]
 		last_ema_vol <- ema_vol[length(ema_vol)]
 		rel_vol_val <- (last_volume - last_ema_vol) / last_ema_vol
@@ -285,9 +362,10 @@ for (stock_name in c(ibov)){
 	# output
 	##########
 	last_price <- stock[,"Close"][nrow(stock)]
-	if (output > 1 && 
-		(last_price > 2 && last_price < 5) &&
-		(last_volume > 100000)
+	if (output > 1 
+		# && 
+		# (last_price > 2 && last_price < 5) &&
+		# (last_volume > 100000)
 		) {
 
 		print(paste("Stock Name:  ", stock_name))
@@ -334,10 +412,10 @@ for (stock_name in c(ibov)){
 			is_up_m <- 1
 		}
 		is_up_w <- 0
-		if (prediction_w) {
-			print(paste("Confidence W:", sprintf("%.4f", confidence_w)))
-			is_up_w <- 1
-		}
+#		if (prediction_w) {
+#			print(paste("Confidence W:", sprintf("%.4f", confidence_w)))
+#			# is_up_w <- 1 # BUG: disabled for a while
+#		}
 		print(paste("Reason:       ", sprintf("[%s]", output), reason, sep=""))
 		print("###################################################")
 
@@ -375,5 +453,7 @@ for (stock_name in c(ibov)){
 # warnings()
 
 print("###################################################")
-print(paste("# Last Download: ", stock[,"Date"][nrow(stock)]))
+print(paste("# Last Download:  ", Sys.Date()))
+print(paste("# Last CheckDate: ", stock[,"Date"][nrow(stock)]))
+print(paste("# Last WorkDate: ", last_workdate))
 print("###################################################")
