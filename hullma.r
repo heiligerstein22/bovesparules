@@ -102,6 +102,16 @@ getStockByDate <- function(stock, last_date) {
 
 }
 
+getCSVBrInvesting <- function(stock_name, period) {
+	csv_file <- try(
+		system(
+			paste("./brinvesting_to_csv.sh", stock_name, period), 
+			intern = TRUE
+		)
+	)
+	return(read.csv(csv_file))
+}
+
 # args
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) > 0) {
@@ -127,12 +137,15 @@ getLastWorkDate = function() {
 
 	# uses PETR4 as test
 #	stock <- read.csv(paste("http://www.google.com/finance/historical?q=PETR4&output=csv", sep=""))
-	stock <- read.csv(
-		paste(
-			"http://chart.finance.yahoo.com/table.csv?s=PETR4.SA&a=1&b=1&c=2017&g=d&ignore=.csv", 
-			sep=""
-		)
-	)
+
+#	stock <- read.csv(
+#		paste(
+#			"http://chart.finance.yahoo.com/table.csv?s=PETR4.SA&a=1&b=1&c=2017&g=d&ignore=.csv", 
+#			sep=""
+#		)
+#	)
+
+	stock <- getCSVBrInvesting("PETR4", "Daily")
 
 	# loop to find last valid workdate with volume
 	for (i in (1:nrow(stock))) {
@@ -181,27 +194,32 @@ for (stock_name in c(ibov)){
         # stock <- TTR::getYahooData(paste(stock_name, ".SA&g=d", sep=""), 20150101)
   		possibleError <- tryCatch({
 
-			stock <- read.csv(
-				paste(
-					"http://chart.finance.yahoo.com/table.csv?s=",
-					stock_name,
-					".SA&a=1&b=1&c=2010&g=d&ignore=.csv", 
-					# ".SA&a=1&b=1&c=2015&d=",lmounth,"&e=",lday,"&f=",lyear,"&g=d&ignore=.csv", 
-					sep=""
-				)
-			)
+#			stock <- read.csv(
+#				paste(
+#					"http://chart.finance.yahoo.com/table.csv?s=",
+#					stock_name,
+#					".SA&a=1&b=1&c=2010&g=d&ignore=.csv", 
+#					# ".SA&a=1&b=1&c=2015&d=",lmounth,"&e=",lday,"&f=",lyear,"&g=d&ignore=.csv", 
+#					sep=""
+#				)
+#			)
+
 #			stock <- read.csv(paste("http://www.google.com/finance/historical?q=",stock_name,"&output=csv", sep=""))
+
+			stock <- getCSVBrInvesting(stock_name, "Daily")
 			stock <- stock[nrow(stock):1,]
 
-			stock_w <- read.csv(
-				paste(
-					"http://chart.finance.yahoo.com/table.csv?s=",
-					stock_name,
-					".SA&a=1&b=1&c=2010&g=w&ignore=.csv", 
-					# ".SA&a=1&b=1&c=2015&d=",lmounth,"&e=",lday,"&f=",lyear,"&g=w&ignore=.csv", 
-					sep=""
-				)
-			)
+#			stock_w <- read.csv(
+#				paste(
+#					"http://chart.finance.yahoo.com/table.csv?s=",
+#					stock_name,
+#					".SA&a=1&b=1&c=2010&g=w&ignore=.csv", 
+#					# ".SA&a=1&b=1&c=2015&d=",lmounth,"&e=",lday,"&f=",lyear,"&g=w&ignore=.csv", 
+#					sep=""
+#				)
+#			)
+
+			stock_w <- getCSVBrInvesting(stock_name, "Weekly")
 			stock_w <- stock_w[nrow(stock_w):1,]
 
 			stock_m <- read.csv(
