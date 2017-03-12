@@ -1,0 +1,139 @@
+<div id="results_box">
+<table class="genTbl closedTbl historicalTbl" id="curr_table" tablesorter>
+    <thead>
+        <tr>
+            <th class="first left noWrap">Data<span sort_default="" class="headerSortDefault"></span></th>
+            <th class="noWrap">Último<span sort_default="" class="headerSortDefault"></span></th>
+            <th class="noWrap">Abertura<span sort_default="" class="headerSortDefault"></span></th>
+            <th class="noWrap">Máxima<span sort_default="" class="headerSortDefault"></span></th>
+            <th class="noWrap">Mínima<span sort_default="" class="headerSortDefault"></span></th>
+            <th class="noWrap">Vol.<span sort_default="" class="headerSortDefault"></span></th>            <th class="noWrap">Var%<span sort_default="" class="headerSortDefault"></span></th>
+        </tr>
+    </thead>
+    <tbody>
+                <tr>
+            <td  data-real-value="1487030400" class="first left bold noWrap">14.02.2017</td>
+            <td class="greenFont">40.00</td>
+            <td>39.64</td>
+            <td>40.18</td>
+            <td>39.62</td>
+            <td data-real-value="12666200">12,67M</td>            <td class="bold greenFont">0.33%</td>
+        </tr>
+                <tr>
+            <td  data-real-value="1486944000" class="first left bold noWrap">13.02.2017</td>
+            <td class="redFont">39.87</td>
+            <td>40.23</td>
+            <td>40.45</td>
+            <td>39.50</td>
+            <td data-real-value="8900500">8,90M</td>            <td class="bold redFont">-0.47%</td>
+        </tr>
+                <tr>
+            <td  data-real-value="1486684800" class="first left bold noWrap">10.02.2017</td>
+            <td class="greenFont">40.06</td>
+            <td>39.98</td>
+            <td>40.25</td>
+            <td>39.64</td>
+            <td data-real-value="20909500">20,91M</td>            <td class="bold greenFont">0.33%</td>
+        </tr>
+                <tr>
+            <td  data-real-value="1486598400" class="first left bold noWrap">09.02.2017</td>
+            <td class="greenFont">39.93</td>
+            <td>39.65</td>
+            <td>40.48</td>
+            <td>39.40</td>
+            <td data-real-value="19841800">19,84M</td>            <td class="bold greenFont">0.45%</td>
+        </tr>
+                <tr>
+            <td  data-real-value="1486512000" class="first left bold noWrap">08.02.2017</td>
+            <td class="greenFont">39.75</td>
+            <td>38.69</td>
+            <td>39.75</td>
+            <td>38.55</td>
+            <td data-real-value="19190300">19,19M</td>            <td class="bold greenFont">2.58%</td>
+        </tr>
+                <tr>
+            <td  data-real-value="1486425600" class="first left bold noWrap">07.02.2017</td>
+            <td class="greenFont">38.75</td>
+            <td>39.33</td>
+            <td>39.52</td>
+            <td>38.64</td>
+            <td data-real-value="22675600">22,68M</td>            <td class="bold greenFont">1.95%</td>
+        </tr>
+                <tr>
+            <td  data-real-value="1486339200" class="first left bold noWrap">06.02.2017</td>
+            <td class="redFont">38.01</td>
+            <td>38.36</td>
+            <td>38.66</td>
+            <td>37.98</td>
+            <td data-real-value="8649200">8,65M</td>            <td class="bold redFont">-0.73%</td>
+        </tr>
+                <tr>
+            <td  data-real-value="1486080000" class="first left bold noWrap">03.02.2017</td>
+            <td class="greenFont">38.29</td>
+            <td>37.44</td>
+            <td>38.61</td>
+            <td>37.44</td>
+            <td data-real-value="14074800">14,07M</td>            <td class="bold greenFont">2.08%</td>
+        </tr>
+                <tr>
+            <td  data-real-value="1485993600" class="first left bold noWrap">02.02.2017</td>
+            <td class="redFont">37.51</td>
+            <td>37.34</td>
+            <td>37.80</td>
+            <td>36.63</td>
+            <td data-real-value="14397000">14,40M</td>            <td class="bold redFont">-0.29%</td>
+        </tr>
+                <tr>
+            <td  data-real-value="1485907200" class="first left bold noWrap">01.02.2017</td>
+            <td class="greenFont">37.62</td>
+            <td>37.53</td>
+            <td>37.84</td>
+            <td>37.41</td>
+            <td data-real-value="13739900">13,74M</td>            <td class="bold greenFont">1.02%</td>
+        </tr>
+                <tr>
+            <td  data-real-value="1485820800" class="first left bold noWrap">31.01.2017</td>
+            <td class="redFont">37.24</td>
+            <td>37.33</td>
+            <td>37.43</td>
+            <td>36.88</td>
+            <td data-real-value="11259900">11,26M</td>            <td class="bold redFont">0.00%</td>
+        </tr>
+            </tbody>
+</table>
+
+<script type="text/javascript">
+$(document).ready(function(){
+    $.tablesorter.addParser({
+        // set a unique id
+        id: 'smartFilter',
+        is: function(s) {
+            return false;
+        },
+        format: function(s, table, cell, cellIndex) {
+            return $(cell).attr('data-real-value');
+        },
+        // set type, either numeric or text
+        type: 'numeric'
+    });
+    $('table[tablesorter]').tablesorter({
+        headers: {
+            0: { sorter: "smartFilter" },
+            5: { sorter: "smartFilter" }        }
+	});
+ });
+</script>
+
+<table class="genTbl closedTbl historicalTblFooter" id="placehereresult2">
+    <tbody>
+        <tr>
+            <td class="noBold noWrap">Alta: <span class="bold inlineblock dirLtr">40.48</span></td>
+            <td class="noWrap">Baixa: <span class="bold inlineblock dirLtr">36.63</span></td>
+            <td class="noWrap">Diferença: <span class="bold inlineblock dirLtr">3.85</span></td>
+            <td class="noWrap">Média: <span class="bold inlineblock dirLtr">38.82</span></td>
+            <td class="noWrap">Var%: <span class="bold inlineblock dirLtr">7.41</span></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+	

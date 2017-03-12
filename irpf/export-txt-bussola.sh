@@ -10,4 +10,4 @@ awk '{
 			printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $2, "v", 1, $1, $4, $6, 1, 1, 1
 		}
 	}' \
-	janeiro2017.txt
+	extrato.txt
