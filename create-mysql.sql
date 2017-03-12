@@ -16,6 +16,32 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `backtest`
+--
+
+DROP TABLE IF EXISTS `backtest`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `backtest` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `stock_name` varchar(20) DEFAULT NULL,
+  `buy_price` float DEFAULT NULL,
+  `sell_price` float DEFAULT NULL,
+  `stop_loss` float DEFAULT NULL,
+  `rsi2` float DEFAULT NULL,
+  `buy_date` date DEFAULT NULL,
+  `sell_date` date DEFAULT NULL,
+  `gain` float DEFAULT NULL,
+  `duration` int(11) DEFAULT NULL,
+  `volume` int(11) DEFAULT NULL,
+  `evolution` float DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  `updated` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=12511 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `stockscreaner`
 --
 
@@ -44,14 +70,20 @@ CREATE TABLE `stockscreaner` (
   `bbands_prev2` float NOT NULL,
   `bbands_prev1` float NOT NULL,
   `bbands` float NOT NULL,
+  `hma_prev3` float NOT NULL,
+  `hma_prev2` float NOT NULL,
+  `hma_prev1` float NOT NULL,
+  `hma` float NOT NULL,
   `relative_volume` int(11) NOT NULL,
   `volume` int(11) NOT NULL,
   `gain` float NOT NULL,
+  `gain30` float NOT NULL,
+  `gain7` float NOT NULL,
   `created` datetime DEFAULT NULL,
   `updated` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uc_stock_checkdate` (`stock_name`,`check_date`)
-) ENGINE=InnoDB AUTO_INCREMENT=4962 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -63,4 +95,4 @@ CREATE TABLE `stockscreaner` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2017-02-26 10:45:48
+-- Dump completed on 2017-03-12 11:25:47
